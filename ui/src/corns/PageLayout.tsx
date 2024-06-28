@@ -1,0 +1,24 @@
+import styled from "styled-components";
+
+export default function PageLayout(props: TPageLayoutProps) {
+  return (
+    <SPageLayout className={props.className}>
+      <h1>{props.title}</h1>
+      {props.children}
+    </SPageLayout>
+  );
+}
+
+const SPageLayout = styled.div`
+  box-sizing: border-box;
+  height: 100%;
+  width: 100%;
+  padding: 15% 10%;
+  text-align: center;
+`;
+
+type TPageLayoutProps = {
+  className?: string;
+  children: React.ReactNode;
+  title: string;
+};

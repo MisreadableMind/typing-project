@@ -1,9 +1,9 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import Root from './corns/Root.tsx'
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./corns/App.tsx";
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <Root />
-  </React.StrictMode>,
-)
+    <App />
+  </React.StrictMode>
+);
