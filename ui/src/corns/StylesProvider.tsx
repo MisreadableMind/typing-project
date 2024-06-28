@@ -16,6 +16,12 @@ const [color, ColorStyleSheet] = createSchemeStyleSheet(
     pageBackground: ["#fff", "#242424"],
     linkText: "#646cff",
     linkHoverText: "#535bf2",
+    composerText: ["#747474", "#aaa"],
+    composerCorrectText: "#00ff00",
+    composerWrongText: "#ff0000",
+    composerBackground: ["#f5f5f5", "#333"],
+    composerBorder: ["#e0e0e0", "#444"],
+    composerFocusBorder: ["#646cff", "#535bf2"],
   },
   "color"
 );
