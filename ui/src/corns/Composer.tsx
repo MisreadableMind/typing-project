@@ -8,7 +8,8 @@ export default function Composer(props: TComposerProps) {
   const [state, dispatch] = useReducer<(state: TComposerState, action: TComposerAction) => TComposerState>(
     (state, action) => {
       switch (action.type) {
-        case "ADD_CORRECT_SYMBOL":
+        case "ADD_SYMBOL":
+          if (state.wrongSymbols > 0) return { ...state, wrongSymbols: state.wrongSymbols + 1 };
           props.onText?.(value.slice(0, state.correctSymbols + 1));
           return { ...state, correctSymbols: state.correctSymbols + 1 };
         case "ADD_WRONG_SYMBOL":
@@ -28,7 +29,7 @@ export default function Composer(props: TComposerProps) {
     { correctSymbols: 0, wrongSymbols: 0 }
   );
 
-  const [correct, wrong, rest] = useMemo((): [correct: string, wrong: string, rest: string] => {
+  const [correct, wrong, rest] = useMemo<[correct: string, wrong: string, rest: string]>(() => {
     return [
       value.slice(0, state.correctSymbols),
       value.slice(state.correctSymbols, state.correctSymbols + state.wrongSymbols),
@@ -42,7 +43,7 @@ export default function Composer(props: TComposerProps) {
     } else if (e.key.length === 1) {
       e.preventDefault();
       if (value[state.correctSymbols + state.wrongSymbols] === e.key) {
-        dispatch({ type: "ADD_CORRECT_SYMBOL" });
+        dispatch({ type: "ADD_SYMBOL" });
       } else {
         dispatch({ type: "ADD_WRONG_SYMBOL" });
       }
@@ -104,6 +105,8 @@ const SComposerCorrectText = styled.span`
 `;
 
 const SComposerText = styled.div`
+  max-width: 800px;
+  margin: 0 auto;
   padding: 2em;
   border: 2px solid ${(p) => p.theme.color.composerBorder};
   border-radius: 20px;
@@ -129,7 +132,7 @@ type TComposerState = {
   wrongSymbols: number;
 };
 
-type TComposerAction = { type: "ADD_CORRECT_SYMBOL" } | { type: "ADD_WRONG_SYMBOL" } | { type: "REMOVE_SYMBOL" };
+type TComposerAction = { type: "ADD_SYMBOL" } | { type: "ADD_WRONG_SYMBOL" } | { type: "REMOVE_SYMBOL" };
 
 type TComposerProps = {
   className?: string;
