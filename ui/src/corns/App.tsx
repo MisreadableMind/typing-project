@@ -27,6 +27,7 @@ export default function App() {
           text={texts[selectedTextName]}
           onInput={(text) => console.log({ text })}
           onMistake={(chunk) => console.warn({ chunk })}
+          whiteSpaces={selectedTextName === "Fibonacci"}
         />
       </PageLayout>
     </StylesProvider>
@@ -38,15 +39,15 @@ const texts = {
     "The sun was shining brightly on a beautiful summer day. Anna decided to go for a walk in the park. She saw many colorful flowers and heard birds singing happily. As she walked, she met her friend Tom, who was playing with his dog. They decided to sit on a bench and talk about their plans for the weekend. They both agreed to go on a picnic by the lake, bringing their favorite snacks and games. It was a perfect plan for a sunny day.",
   Short: "Hello, Typing Project!",
   Fibonacci: `function printFibonacci(limit) {
-    if (limit < 1) return;
-    let a = 0, b = 1, nextTerm;
-    console.log(a); // Print the first term
-    for (let i = 1; i < limit; i++) {
-        console.log(b); // Print the next term
-        nextTerm = a + b;
-        a = b;
-        b = nextTerm;
-    }
+\tif (limit < 1) return;
+\tlet a = 0, b = 1, nextTerm;
+\tconsole.log(a); // Print the first term
+\tfor (let i = 1; i < limit; i++) {
+\t\tconsole.log(b); // Print the next term
+\t\tnextTerm = a + b;
+\t\ta = b;
+\t\tb = nextTerm;
+\t}
 }`,
 } as const;
 
