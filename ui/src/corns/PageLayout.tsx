@@ -13,7 +13,7 @@ const SPageLayout = styled.div`
   box-sizing: border-box;
   min-height: 100%;
   min-width: 100%;
-  padding: 15% 10%;
+  padding: 10vh 10vw;
   text-align: center;
 `;
 
