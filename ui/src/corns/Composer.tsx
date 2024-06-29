@@ -18,9 +18,7 @@ const Composer = React.forwardRef<TComposerRef, TComposerProps>(function Compose
 
     if (inputRef.current) {
       inputRef.current.value = "";
-      if (ongoingChunkRef.current === "") {
-        inputRef.current.disabled = true;
-      }
+      inputRef.current.disabled = ongoingChunkRef.current === "";
     }
 
     if (completedTextRef.current) {
