@@ -12,12 +12,12 @@ export default function GlobalStyleSheet() {
 
 const GlobalStyles = createGlobalStyle`
     html, body, #root {
-        height: 100%;
-        width: 100%;
+        min-height: 100%;
+        min-width: 100%;
     }
 
     body {
-        font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+        font-family: "Roboto Mono", "Roboto Mono", "Vazirmatn", monospace;
         line-height: 1.5;
         font-weight: 400;
 

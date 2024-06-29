@@ -11,8 +11,8 @@ export default function PageLayout(props: TPageLayoutProps) {
 
 const SPageLayout = styled.div`
   box-sizing: border-box;
-  height: 100%;
-  width: 100%;
+  min-height: 100%;
+  min-width: 100%;
   padding: 15% 10%;
   text-align: center;
 `;
