@@ -23,6 +23,8 @@ const [color, ColorStyleSheet] = createSchemeStyleSheet(
     composerCorrectText: ["#242424", "#fff"],
     composerWrongText: "#820303",
     composerWrongBackground: "#f0a3a3",
+    composerEditingTextShadow: ["#fff", "#000"],
+    composerSelectionText: ["#add8e6", "#637ea3"],
     composerBackground: ["#f5f5f5", "#333"],
     composerBorder: ["#e0e0e0", "#444"],
     composerFocusBorder: ["#646cff", "#535bf2"],

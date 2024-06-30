@@ -14,6 +14,99 @@ const Composer = React.forwardRef<TComposerRef, TComposerProps>(function Compose
   const editingRestTextRef = useRef<HTMLSpanElement>(null);
   const restTextRef = useRef<HTMLSpanElement>(null); // Part of text that need to be entered after the ongoing chunk
 
+  const renderEditingText = useRefCallback(
+    (p: { correct: string; wrong: string; rest: string; start: number; end: number; caret: number }) => {
+      const { correct, wrong, rest, start, end, caret } = p;
+
+      if (editingCorrectTextRef.current) {
+        let chunk = correct;
+        if (start === end) {
+          if (start <= correct.length) {
+            chunk = chunk.slice(0, start) + caretPlaceholder + chunk.slice(start);
+          }
+        } else if (start < correct.length) {
+          if (end <= correct.length) {
+            chunk =
+              chunk.slice(0, end) +
+              selectionEndPlaceholder +
+              (caret === end ? caretPlaceholder : "") +
+              chunk.slice(end);
+          } else {
+            chunk += selectionEndPlaceholder;
+          }
+
+          chunk =
+            chunk.slice(0, start) +
+            (caret === start ? caretPlaceholder : "") +
+            selectionStartPlaceholder +
+            chunk.slice(start);
+        }
+
+        chunk = displayWhiteSpaces(chunk, whiteSpaces);
+
+        if (start <= correct.length) {
+          chunk = chunk
+            .replace(caretPlaceholder, caretHtml)
+            .replace(selectionStartPlaceholder, selectionStartHtml)
+            .replace(selectionEndPlaceholder, selectionEndHtml);
+        }
+
+        editingCorrectTextRef.current.innerHTML = chunk;
+      }
+
+      if (editingWrongTextRef.current) {
+        const offset = correct.length;
+        let chunk = wrong;
+        if (end > offset) {
+          if (end === start) {
+            chunk = chunk.slice(0, start - offset) + caretPlaceholder + chunk.slice(start - offset);
+          } else {
+            chunk =
+              chunk.slice(0, end - offset) +
+              selectionEndPlaceholder +
+              (caret === end ? caretPlaceholder : "") +
+              chunk.slice(end - offset);
+
+            if (start >= offset) {
+              chunk =
+                chunk.slice(0, start - offset) +
+                (caret === start ? caretPlaceholder : "") +
+                selectionStartPlaceholder +
+                chunk.slice(start - offset);
+            } else {
+              chunk = selectionStartPlaceholder + chunk;
+            }
+          }
+        }
+
+        chunk = displayWhiteSpaces(chunk, whiteSpaces);
+
+        if (end > correct.length) {
+          chunk = chunk
+            .replace(caretPlaceholder, caretHtml)
+            .replace(selectionStartPlaceholder, selectionStartHtml)
+            .replace(selectionEndPlaceholder, selectionEndHtml);
+        }
+
+        editingWrongTextRef.current.innerHTML = chunk;
+      }
+
+      if (editingRestTextRef.current) {
+        editingRestTextRef.current.innerHTML = displayWhiteSpaces(rest, whiteSpaces);
+      }
+
+      if (inputRef.current) {
+        // inputRef.current.setSelectionRange(start, end, "forward");
+        // if (caret !== -1) {
+        //   const caretSpan = document.createElement("span");
+        //   caretSpan.className = "caret";
+        //   caretSpan.textContent = "|";
+        //   inputRef.current.parentElement?.appendChild(caretSpan);
+        // }
+      }
+    }
+  );
+
   useLayoutEffect(() => {
     completedChunksRef.current = "";
     ongoingChunkRef.current = text.match(/^\S+\s+/)?.[0] || "";
@@ -27,22 +120,19 @@ const Composer = React.forwardRef<TComposerRef, TComposerProps>(function Compose
       completedTextRef.current.textContent = "";
     }
 
-    if (editingCorrectTextRef.current) {
-      editingCorrectTextRef.current.textContent = "";
-    }
-
-    if (editingWrongTextRef.current) {
-      editingWrongTextRef.current.textContent = "";
-    }
-
-    if (editingRestTextRef.current) {
-      editingRestTextRef.current.innerHTML = displayWhiteSpaces(ongoingChunkRef.current, whiteSpaces);
-    }
+    renderEditingText({
+      correct: "",
+      wrong: "",
+      rest: ongoingChunkRef.current,
+      start: 0,
+      end: 0,
+      caret: 0,
+    });
 
     if (restTextRef.current) {
       restTextRef.current.innerHTML = displayWhiteSpaces(text.slice(ongoingChunkRef.current.length), whiteSpaces);
     }
-  }, [text, whiteSpaces]); // whiteSpaces should not be here, on/off should be possible during the play without resetting the state
+  }, [text, whiteSpaces, renderEditingText]); // whiteSpaces should not be here, on/off should be possible during the play without resetting the state
 
   useImperativeHandle(ref, () => ({
     focus() {
@@ -50,25 +140,42 @@ const Composer = React.forwardRef<TComposerRef, TComposerProps>(function Compose
     },
   }));
 
-  const handleInputChange = useRefCallback(() => {
+  const handleKeydown = useRefCallback((event: React.KeyboardEvent) => {
+    if (event.key === "Tab") {
+      event.preventDefault();
+      const textarea = event.target as HTMLTextAreaElement;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+
+      // Set textarea value to: text before caret + tab + text after caret
+      textarea.value = textarea.value.substring(0, start) + "\t" + textarea.value.substring(end);
+
+      // Put caret at right position again
+      textarea.selectionStart = textarea.selectionEnd = start + 1;
+
+      // handleInputChange();
+    }
+  });
+
+  const handleSelectChange = useRefCallback(() => {
     const input = inputRef.current;
     if (!input) return;
 
-    if (input.value !== ongoingChunkRef.current) {
-      // Display ongoing state
-      const matched = findMatchingPart(ongoingChunkRef.current ?? "", input.value);
-      if (editingCorrectTextRef.current) {
-        editingCorrectTextRef.current.innerHTML = displayWhiteSpaces(matched, whiteSpaces);
-      }
-      if (editingWrongTextRef.current) {
-        editingWrongTextRef.current.innerHTML = displayWhiteSpaces(input.value.slice(matched.length), whiteSpaces);
-      }
-      if (editingRestTextRef.current) {
-        editingRestTextRef.current.innerHTML = displayWhiteSpaces(
-          ongoingChunkRef.current.slice(matched.length),
-          whiteSpaces
-        );
-      }
+    const { value, selectionStart, selectionEnd, selectionDirection } = input;
+    const caretPosition = selectionDirection === "forward" ? selectionEnd : selectionStart;
+
+    if (value !== ongoingChunkRef.current) {
+      const matched = findMatchingPart(ongoingChunkRef.current ?? "", value);
+
+      renderEditingText({
+        correct: matched,
+        wrong: value.slice(matched.length),
+        rest: ongoingChunkRef.current.slice(matched.length),
+        start: selectionStart,
+        end: selectionEnd,
+        caret: caretPosition,
+      });
+
       return;
     }
 
@@ -93,45 +200,31 @@ const Composer = React.forwardRef<TComposerRef, TComposerProps>(function Compose
       );
     }
 
-    if (editingCorrectTextRef.current) {
-      editingCorrectTextRef.current.textContent = "";
-    }
-
-    if (editingWrongTextRef.current) {
-      editingWrongTextRef.current.textContent = "";
-    }
-
-    if (editingRestTextRef.current) {
-      editingRestTextRef.current.innerHTML = displayWhiteSpaces(ongoingChunkRef.current, whiteSpaces);
-    }
-  });
-
-  const handleKeydown = useRefCallback((event: React.KeyboardEvent) => {
-    if (event.key === "Tab") {
-      event.preventDefault();
-      const textarea = event.target as HTMLTextAreaElement;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-
-      // Set textarea value to: text before caret + tab + text after caret
-      textarea.value = textarea.value.substring(0, start) + "\t" + textarea.value.substring(end);
-
-      // Put caret at right position again
-      textarea.selectionStart = textarea.selectionEnd = start + 1;
-
-      handleInputChange();
-    }
+    renderEditingText({
+      correct: "",
+      wrong: "",
+      rest: ongoingChunkRef.current,
+      start: 0,
+      end: 0,
+      caret: 0,
+    });
   });
 
   return (
     <SComposer className={className}>
-      <SComposerInput ref={inputRef} onInput={handleInputChange} onKeyDown={handleKeydown} /*onSelect={trackInput}*/ />
+      <SComposerInput
+        ref={inputRef}
+        onKeyDown={handleKeydown}
+        onSelect={handleSelectChange} // Select will handle input updates to prevent doing same work twice
+        autoComplete="off"
+        spellCheck="false"
+      />
       <SComposerText>
         <span className="correct" ref={completedTextRef} />
         <span className="editing">
           <span className="correct" ref={editingCorrectTextRef} />
           <span className="wrong" ref={editingWrongTextRef} />
-          <SComposerRestText ref={editingRestTextRef} />
+          <span ref={editingRestTextRef} />
         </span>
         <span ref={restTextRef} />
       </SComposerText>
@@ -141,6 +234,14 @@ const Composer = React.forwardRef<TComposerRef, TComposerProps>(function Compose
 
 export default Composer;
 
+const caretPlaceholder = "┃";
+const selectionStartPlaceholder = "└";
+const selectionEndPlaceholder = "┘";
+
+const caretHtml = '<span class="caret"></span>';
+const selectionStartHtml = '<span class="selection">';
+const selectionEndHtml = "</span>";
+
 function displayWhiteSpaces(text: string, enabled = true): string {
   if (!enabled) return text;
 
@@ -148,7 +249,7 @@ function displayWhiteSpaces(text: string, enabled = true): string {
     .replace(/</g, "&lt;")
     .replace(/ /g, '<span class="space"> </span>')
     .replace(/\t/g, '<span class="tab">\t</span>')
-    .replace(/\n/g, '<span class="line-break">⏎\n</span>');
+    .replace(/\n/g, '<span class="line-break">\n</span>');
 }
 
 function findMatchingPart(text: string, input: string): string {
@@ -157,29 +258,25 @@ function findMatchingPart(text: string, input: string): string {
   return "";
 }
 
-const cursorBlinkKeyframes = keyframes`
+const caretBlinkKeyframes = keyframes`
   0% {
-    border-left-color: transparent;
+    opacity: 0;
   }
   50% {
-    border-left-color: var(--color-composerCaret);
+    opacity: 1;
   }
   100% {
-    border-left-color: transparent;
+    opacity: 0;
   }
-`;
-
-const SComposerRestText = styled.span`
-  margin-left: -3px;
-  border-left: 3px solid ${(p) => p.theme.color.composerCaret};
-  animation: ${cursorBlinkKeyframes} 1s infinite;
 `;
 
 const SComposerText = styled.div`
   tab-size: 2;
 
-  .editing span {
-    border-bottom: 3px solid gray;
+  .editing {
+    /* border-bottom: 3px solid gray; */
+    text-decoration: underline;
+    text-shadow: 0 1px 1px ${(p) => p.theme.color.composerEditingTextShadow};
   }
 
   .correct {
@@ -191,10 +288,14 @@ const SComposerText = styled.div`
     background-color: ${(p) => p.theme.color.composerWrongBackground};
   }
 
+  .selection {
+    background-color: ${(p) => p.theme.color.composerSelectionText};
+  }
+
   .space,
   .tab,
   .line-break {
-    opacity: 0.4;
+    opacity: 0.5;
   }
 
   .space {
@@ -210,7 +311,14 @@ const SComposerText = styled.div`
     }
   }
 
-  .line-break {
+  .line-break::before {
+    content: "↵";
+  }
+
+  .caret {
+    margin-right: -3px;
+    border-left: 3px solid currentColor;
+    animation: ${caretBlinkKeyframes} 1s infinite;
   }
 `;
 
@@ -244,7 +352,7 @@ const SComposer = styled.div`
   color: ${(p) => p.theme.color.composerText};
   font-size: 30px;
   text-align: left;
-  white-space: pre-wrap;
+  white-space: break-spaces;
 
   position: relative;
   ${SComposerInput} {
