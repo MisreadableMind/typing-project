@@ -270,13 +270,13 @@ function findMatchingPart(text: string, input: string): string {
 
 const caretBlinkKeyframes = keyframes`
   0% {
-    opacity: 0;
-  }
-  50% {
     opacity: 1;
   }
-  100% {
+  50% {
     opacity: 0;
+  }
+  100% {
+    opacity: 1;
   }
 `;
 
@@ -284,7 +284,7 @@ const SComposerText = styled.div`
   tab-size: 2;
 
   .editing .char {
-    text-decoration: underline;
+    border-bottom: 3px solid currentColor;
     text-shadow: 0 1px 1px ${(p) => p.theme.color.composerEditingTextShadow};
   }
 
@@ -367,6 +367,12 @@ const SComposer = styled.div`
   ${SComposerInput} {
     position: absolute;
     inset: 0;
+  }
+
+  &:not(:focus-within) {
+    .caret {
+      display: none;
+    }
   }
 `;
 
