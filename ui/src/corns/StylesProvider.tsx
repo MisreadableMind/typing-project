@@ -33,6 +33,10 @@ const [color, ColorStyleSheet] = createSchemeStyleSheet(
     buttonBackground: ["#f5f5f5", "#333"],
     buttonSelectedBackground: ["#646cff", "#535bf2"],
     buttonBorder: ["#e0e0e0", "#444"],
+    progressBorder: ["#000", "#fff"],
+    progressBar: "#00bfff",
+    progressBarWithMistakes: "#f0a3a3",
+    progressBackground: ["#fff", "#000"],
   },
   "color"
 );

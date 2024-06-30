@@ -1,13 +1,35 @@
 import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
-import Composer, { TComposerRef } from "./Composer";
+import Composer, { TComposerMistake, TComposerRef } from "./Composer";
 import PageLayout from "./PageLayout";
 import StylesProvider from "./StylesProvider";
+import Progress from "./Progress";
+import useRefCallback from "use-ref-callback";
 
 export default function App() {
   const [selectedTextName, selectText] = useState(() => textsNames[0]);
   const composerRef = useRef<TComposerRef>(null);
-  useEffect(() => composerRef.current?.focus(), [selectedTextName]);
+  const [entered, setEntered] = useState("");
+  const [hasMistakes, setHasMistakes] = useState(false);
+
+  useEffect(
+    function resetAllWhenTextIsChanged() {
+      composerRef.current?.focus();
+      setEntered("");
+      setHasMistakes(false);
+    },
+    [selectedTextName]
+  );
+
+  const handleMistake = useRefCallback((mistake: TComposerMistake | null) => {
+    if (mistake)
+      console.log(
+        `${mistake.correct}%c${mistake.wrong}%c${mistake.original.slice(mistake.correct.length)}`,
+        "background: orangered; color: white",
+        "background: transparent; color: gray"
+      );
+    setHasMistakes(!!mistake);
+  });
 
   return (
     <StylesProvider>
@@ -25,10 +47,11 @@ export default function App() {
         <Composer
           ref={composerRef}
           text={texts[selectedTextName]}
-          onInput={(text) => console.log({ text })}
-          onMistake={(chunk) => console.warn({ chunk })}
+          onInput={setEntered}
+          onMistake={handleMistake}
           whiteSpaces={selectedTextName === "Fibonacci"}
         />
+        <SProgress total={texts[selectedTextName].length} correct={entered.length} hasMistakes={hasMistakes} />
       </PageLayout>
     </StylesProvider>
   );
@@ -53,6 +76,14 @@ const texts = {
 } as const;
 
 const textsNames = Object.keys(texts) as (keyof typeof texts)[];
+
+const SProgress = styled(Progress)`
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  translate: -50% 0;
+  width: 300px;
+`;
 
 const SButton = styled.button.attrs({ type: "button" })<{ $selected: boolean }>`
   white-space: nowrap;

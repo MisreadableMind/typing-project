@@ -3,7 +3,10 @@ import styled, { keyframes } from "styled-components";
 import useRefCallback from "use-ref-callback";
 
 const Composer = React.forwardRef<TComposerRef, TComposerProps>(function Composer(props, ref) {
-  const { className, text, whiteSpaces } = props;
+  const { className, text, whiteSpaces, onInput, onMistake } = props;
+
+  const lastServedInputRef = useRef(""); // Last value that was emitted to the onInput callback
+  const lastServedMistakeRef = useRef<TComposerMistake | null>(null); // Last mistake that was emitted to the onMistake callback
 
   const inputRef = useRef<HTMLTextAreaElement>(null); // Editable part
   const completedChunksRef = useRef<string>(""); // Chunks that entered correctly
@@ -152,8 +155,6 @@ const Composer = React.forwardRef<TComposerRef, TComposerProps>(function Compose
 
       // Put caret at right position again
       textarea.selectionStart = textarea.selectionEnd = start + 1;
-
-      // handleInputChange();
     }
   });
 
@@ -161,20 +162,33 @@ const Composer = React.forwardRef<TComposerRef, TComposerProps>(function Compose
     const input = inputRef.current;
     if (!input) return;
 
-    const { value, selectionStart, selectionEnd, selectionDirection } = input;
-    const caretPosition = selectionDirection === "forward" ? selectionEnd : selectionStart;
+    const { value, selectionStart: start, selectionEnd: end, selectionDirection } = input;
+    const caret = selectionDirection === "forward" ? end : start;
 
     if (value !== ongoingChunkRef.current) {
-      const matched = findMatchingPart(ongoingChunkRef.current ?? "", value);
+      const correct = findMatchingPart(ongoingChunkRef.current ?? "", value);
 
-      renderEditingText({
-        correct: matched,
-        wrong: value.slice(matched.length),
-        rest: ongoingChunkRef.current.slice(matched.length),
-        start: selectionStart,
-        end: selectionEnd,
-        caret: caretPosition,
-      });
+      const newValue = completedChunksRef.current + correct;
+      if (newValue !== lastServedInputRef.current) {
+        lastServedInputRef.current = newValue;
+        onInput?.(lastServedInputRef.current);
+      }
+
+      const wrong = value.slice(correct.length);
+
+      if (wrong.length > 0) {
+        const index = completedChunksRef.current.length + correct.length;
+        const original = ongoingChunkRef.current;
+        lastServedMistakeRef.current = { index, original, correct, wrong };
+        onMistake?.(lastServedMistakeRef.current);
+      } else if (lastServedMistakeRef.current) {
+        lastServedMistakeRef.current = null;
+        onMistake?.(null);
+      }
+
+      const rest = ongoingChunkRef.current.slice(correct.length);
+
+      renderEditingText({ correct, wrong, rest, start, end, caret });
 
       return;
     }
@@ -182,6 +196,9 @@ const Composer = React.forwardRef<TComposerRef, TComposerProps>(function Compose
     input.value = "";
 
     completedChunksRef.current = completedChunksRef.current + ongoingChunkRef.current;
+
+    lastServedInputRef.current = completedChunksRef.current;
+    onInput?.(lastServedInputRef.current);
 
     if (completedTextRef.current) {
       completedTextRef.current.innerHTML = formatOutput(completedChunksRef.current, whiteSpaces);
@@ -243,6 +260,7 @@ const selectionStartHtml = '<span class="selection">';
 const selectionEndHtml = "</span>";
 
 function formatOutput(text: string, enableWhiteSpaces = true): string {
+  // This is a faster version of the function that does not allow to style chars separately (needed to underscore them only without white spaces)
   // return text
   //   .replace(/</g, "&lt;")
   //   .replace(/ /g, '<span class="space"> </span>')
@@ -376,12 +394,19 @@ const SComposer = styled.div`
   }
 `;
 
+export type TComposerMistake = {
+  original: string;
+  correct: string;
+  wrong: string;
+  index: number;
+};
+
 type TComposerProps = {
   className?: string;
   text: string;
   whiteSpaces?: boolean;
   onInput?: (text: string) => void;
-  onMistake?: (chunk: string) => void;
+  onMistake?: (mistake: TComposerMistake | null) => void;
 };
 
 export type TComposerRef = {
