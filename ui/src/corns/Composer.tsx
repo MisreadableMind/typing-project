@@ -42,7 +42,7 @@ const Composer = React.forwardRef<TComposerRef, TComposerProps>(function Compose
             chunk.slice(start);
         }
 
-        chunk = displayWhiteSpaces(chunk, whiteSpaces);
+        chunk = formatOutput(chunk, whiteSpaces);
 
         if (start <= correct.length) {
           chunk = chunk
@@ -79,7 +79,7 @@ const Composer = React.forwardRef<TComposerRef, TComposerProps>(function Compose
           }
         }
 
-        chunk = displayWhiteSpaces(chunk, whiteSpaces);
+        chunk = formatOutput(chunk, whiteSpaces);
 
         if (end > correct.length) {
           chunk = chunk
@@ -92,7 +92,7 @@ const Composer = React.forwardRef<TComposerRef, TComposerProps>(function Compose
       }
 
       if (editingRestTextRef.current) {
-        editingRestTextRef.current.innerHTML = displayWhiteSpaces(rest, whiteSpaces);
+        editingRestTextRef.current.innerHTML = formatOutput(rest, whiteSpaces);
       }
 
       if (inputRef.current) {
@@ -130,7 +130,7 @@ const Composer = React.forwardRef<TComposerRef, TComposerProps>(function Compose
     });
 
     if (restTextRef.current) {
-      restTextRef.current.innerHTML = displayWhiteSpaces(text.slice(ongoingChunkRef.current.length), whiteSpaces);
+      restTextRef.current.innerHTML = formatOutput(text.slice(ongoingChunkRef.current.length), whiteSpaces);
     }
   }, [text, whiteSpaces, renderEditingText]); // whiteSpaces should not be here, on/off should be possible during the play without resetting the state
 
@@ -184,7 +184,7 @@ const Composer = React.forwardRef<TComposerRef, TComposerProps>(function Compose
     completedChunksRef.current = completedChunksRef.current + ongoingChunkRef.current;
 
     if (completedTextRef.current) {
-      completedTextRef.current.innerHTML = displayWhiteSpaces(completedChunksRef.current, whiteSpaces);
+      completedTextRef.current.innerHTML = formatOutput(completedChunksRef.current, whiteSpaces);
     }
 
     ongoingChunkRef.current = text.slice(completedChunksRef.current.length).match(/^\S+(\s+|$)/)?.[0] || "";
@@ -194,7 +194,7 @@ const Composer = React.forwardRef<TComposerRef, TComposerProps>(function Compose
     }
 
     if (restTextRef.current) {
-      restTextRef.current.innerHTML = displayWhiteSpaces(
+      restTextRef.current.innerHTML = formatOutput(
         text.slice(completedChunksRef.current.length + ongoingChunkRef.current.length),
         whiteSpaces
       );
@@ -242,14 +242,24 @@ const caretHtml = '<span class="caret"></span>';
 const selectionStartHtml = '<span class="selection">';
 const selectionEndHtml = "</span>";
 
-function displayWhiteSpaces(text: string, enabled = true): string {
-  if (!enabled) return text;
+function formatOutput(text: string, enableWhiteSpaces = true): string {
+  // return text
+  //   .replace(/</g, "&lt;")
+  //   .replace(/ /g, '<span class="space"> </span>')
+  //   .replace(/\t/g, '<span class="tab">\t</span>')
+  //   .replace(/\n/g, '<span class="line-break">\n</span>');
 
-  return text
-    .replace(/</g, "&lt;")
-    .replace(/ /g, '<span class="space"> </span>')
-    .replace(/\t/g, '<span class="tab">\t</span>')
-    .replace(/\n/g, '<span class="line-break">\n</span>');
+  return Array.from(text)
+    .map((symbol) => {
+      if (symbol === caretPlaceholder || symbol === selectionStartPlaceholder || symbol == selectionEndPlaceholder) {
+        return symbol;
+      }
+      if (symbol === " ") return enableWhiteSpaces ? '<span class="space"> </span>' : symbol;
+      if (symbol === "\t") return enableWhiteSpaces ? '<span class="tab">\t</span>' : symbol;
+      if (symbol === "\n") return enableWhiteSpaces ? '<span class="line-break">\n</span>' : symbol;
+      return `<span class="char">${symbol}</span>`;
+    })
+    .join("");
 }
 
 function findMatchingPart(text: string, input: string): string {
@@ -273,8 +283,7 @@ const caretBlinkKeyframes = keyframes`
 const SComposerText = styled.div`
   tab-size: 2;
 
-  .editing {
-    /* border-bottom: 3px solid gray; */
+  .editing .char {
     text-decoration: underline;
     text-shadow: 0 1px 1px ${(p) => p.theme.color.composerEditingTextShadow};
   }
