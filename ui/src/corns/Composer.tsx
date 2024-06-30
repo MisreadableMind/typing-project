@@ -194,7 +194,7 @@ const SComposerText = styled.div`
   .space,
   .tab,
   .line-break {
-    opacity: 0.5;
+    opacity: 0.4;
   }
 
   .space {
