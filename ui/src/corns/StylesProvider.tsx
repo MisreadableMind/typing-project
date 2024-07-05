@@ -37,14 +37,28 @@ const [color, ColorStyleSheet] = createSchemeStyleSheet(
     progressBar: "#00bfff",
     progressBarWithMistakes: "#f0a3a3",
     progressBackground: ["#fff", "#000"],
+    pageHeaderShadow: ["#777", "#fff"],
   },
   "color"
 );
 
 const theme = {
   color,
+  offset: {
+    base: "4px",
+    page: {
+      vertical: "16px",
+      horizontal: "32px",
+    },
+  },
 } as const;
 
 type TStylesProviderProps = {
   children: React.ReactNode;
 };
+
+type TApplicationTheme = typeof theme;
+
+declare module "styled-components" {
+  export interface DefaultTheme extends TApplicationTheme {}
+}
