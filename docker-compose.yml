@@ -1,0 +1,46 @@
+version: "3.5"
+services:
+  db-server:
+    restart: always
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    networks:
+      - support-backend
+    ports:
+      - '5433:5432'
+    volumes:
+      - 'postgres:/var/lib/psql'
+#  main-server:
+#    build:
+#      context: ./apі
+#      dockerfile: Dockerfile
+#    image: main-server:latest
+#    deploy:
+#      replicas: 1
+#    ports:
+#      - "3000:3000"
+#    networks:
+#      - support-backend
+#    depends_on:
+#      - db-server
+#    environment:
+#      DB_HOST: db-server
+#      DB_PORT: 5433
+#      DB_USERNAME: "backend_service"
+#      DB_PASSWORD: "yD016y8ko!Hx"
+#      DB_NAME: "taptaptap_local"
+#      DB_CONNECTION_POOL_SIZE: 16
+#      JWT_SECRET_KEY: "RAINY_DAY_IN_JUNE"
+#      PASSWORD_SALT_ROUNDS: 12
+#      PRETTY_LOGGING: false
+#      OPEN_AI_API_KEY: "OPEN_AI_KEY"
+#      SENTRY_KEY: "SENTRY_KEY"
+#    restart: unless-stopped
+
+networks:
+  taptaptap-backend:
+    driver: overlay
+
+volumes:
+  postgres:
