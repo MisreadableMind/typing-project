@@ -1,46 +1,70 @@
-version: "3.5"
+version: '3.8'
+
 services:
-  db-server:
-    restart: always
-    build:
-      context: ./database
-      dockerfile: Dockerfile
-    networks:
-      - support-backend
+  db:
+    image: postgres:15-alpine
+    container_name: taptaptap-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: taptaptap
     ports:
-      - '5433:5432'
+      - "5533:5432"
     volumes:
-      - 'postgres:/var/lib/psql'
-#  main-server:
-#    build:
-#      context: ./apі
-#      dockerfile: Dockerfile
-#    image: main-server:latest
-#    deploy:
-#      replicas: 1
-#    ports:
-#      - "3000:3000"
-#    networks:
-#      - support-backend
-#    depends_on:
-#      - db-server
-#    environment:
-#      DB_HOST: db-server
-#      DB_PORT: 5433
-#      DB_USERNAME: "backend_service"
-#      DB_PASSWORD: "yD016y8ko!Hx"
-#      DB_NAME: "taptaptap_local"
-#      DB_CONNECTION_POOL_SIZE: 16
-#      JWT_SECRET_KEY: "RAINY_DAY_IN_JUNE"
-#      PASSWORD_SALT_ROUNDS: 12
-#      PRETTY_LOGGING: false
-#      OPEN_AI_API_KEY: "OPEN_AI_KEY"
-#      SENTRY_KEY: "SENTRY_KEY"
-#    restart: unless-stopped
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - taptaptap
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: taptaptap-backend
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=taptaptap
+      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    networks:
+      - taptaptap
+
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    container_name: taptaptap-ui
+    environment:
+      - API_URL=http://backend:3000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./ui:/app
+      - /app/node_modules
+    networks:
+      - taptaptap
 
 networks:
-  taptaptap-backend:
-    driver: overlay
+  taptaptap:
+    driver: bridge
 
 volumes:
-  postgres:
+  postgres_data:
